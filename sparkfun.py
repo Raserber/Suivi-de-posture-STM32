@@ -1,7 +1,7 @@
 from machine import Pin, I2C
 import time
 
-class sparkfun:
+class SPARKFUN:
     
     adresse_lecture = 0x55  # 7-bit address
     adresse_ecriture = 0x55
@@ -13,6 +13,7 @@ class sparkfun:
     StateOfHealth = 0x20
     Flags = 0x06
     TrueRemainingCapacity = 0x6A
+    FullChargeCapacity = 0x0A
 
     # Lecture/écriture
     Control = 0x00
@@ -44,6 +45,14 @@ class sparkfun:
     def read_temperature(self):
         raw = self.read16(self.InternalTemperature)
         return (raw / 10.0) - 273.15  # Conversion 0.1 K → °C
+    
+    def read_trueRemainingCapacity(self):
+        return self.read16(self.TrueRemainingCapacity)
+    
+    
+    def read_FullChargeCapacity(self):
+        return self.read16(self.FullChargeCapacity)
+    
 
     def read_soh(self):
         raw = self.read16(self.StateOfHealth)
@@ -59,6 +68,7 @@ class sparkfun:
 
     def irq(self, pin):
         """Callback appelée sur front descendant de GPOUT."""
+        
         soc = self.read_soc()
         print("Interruption GPOUT – nouveau SOC :", soc)
 
@@ -66,4 +76,5 @@ class sparkfun:
     # TODO : instrumenter StateOfHealth pour pourcentage réel de charge
     # TODO : Configurer le pin GPOUT en pull-down et avertissement à chaque changement de pourcentage
     # TODO : réflechir à aller chercher informations supplementaires quand batterie basse (tension, capacité restante ...)
+    # TODO : aller chercher capacité réelle que lors du démarrage et autres informations non changeantes rapidement
     

@@ -1,50 +1,117 @@
-import bluetooth
-import time
+from bluetooth import BLE, UUID, FLAG_READ, FLAG_NOTIFY, FLAG_WRITE
 import struct
 
-# Initialisation du Bluetooth LE
-ble = bluetooth.BLE()
-ble.active(True)
+class BLEManager:
+    def __init__(self, name="SensorNode"):
+        self.ble = BLE()
+        self.ble.active(True)
+        self.ble.irq(self._irq)
 
-# UUIDs du service et de la caractéristique
-UUID_SERVICE = bluetooth.UUID(0x180C)
-UUID_CHARACTERISTIC = bluetooth.UUID(0x2A56)
+        self.name = name
+        self._connections = set()
+        self._soc_last_sent = None
 
-# Enregistrement du service
-SERVICE = (UUID_SERVICE, ((UUID_CHARACTERISTIC, bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY),))
-SERVICES = (SERVICE,)
-handles = ble.gatts_register_services(SERVICES)
-handle = handles[0][0]  # Récupération correcte du handle
+        # UUIDs mis à jour
+        self._uuid_batt_svc = UUID(0x180F)
+        self._uuid_batt_level = UUID(0x2A19)
 
-# Fonction d'annonce BLE
-def ble_advertise():
-    name = b"STM32_BLE"
-    adv_data = b"\x02\x01\x06" + bytes([len(name) + 1, 0x09]) + name
-    ble.gap_advertise(50, adv_data)  # Intervalle de publicité réduit à 50 ms
-    print("Annonce BLE en cours...")
+        self._uuid_custom_svc = UUID("04dbe0ce-7da7-4629-b2c1-7b6389fd5290")
+        self._uuid_imu_char = UUID("150b83fc-1440-4104-b232-4e61ebc94322")
+        self._uuid_batt_details_char = UUID("775b6cf8-f951-41ff-9eb1-b37469b4ed64")
+        self._uuid_cmd_char = UUID("c6183eb2-ce58-46c1-82de-c96e5033d7a4")
 
-# Fonction pour envoyer les données BLE
-def send_ble_data():
-    #ax, ay, az, gx, gy, gz = get_sensor_data()
-    data = struct.pack("hhhhhh", ax, ay, az, gx, gy, gz)
-    ble.gatts_write(handle, data)
-    print(f"Accel: {ax}, {ay}, {az} | Gyro: {gx}, {gy}, {gz}")
+        self._batt_handle = None
+        self._imu_handle = None
+        self._batt_details_handle = None
+        self._cmd_handle = None
 
-# Fonction de rappel pour les événements BLE
-def on_connect(event, data):
-    if event == bluetooth.EVENT_CONNECT:
-        print("Périphérique connecté.")
-        ble.gap_advertise(None)  # Arrêter la publicité lorsque connecté
-    elif event == bluetooth.EVENT_DISCONNECT:
-        print("Périphérique déconnecté.")
-        ble_advertise()  # Redémarrer la publicité lorsque déconnecté
+        self._register_services()
+        self._advertise(self.name)
 
-# Enregistrement des rappels
-ble.irq(on_connect)
-ble_advertise()
+    def _register_services(self):
+        # Service batterie (standard)
+        batt_service = (
+            self._uuid_batt_svc,
+            ((self._uuid_batt_level, FLAG_READ | FLAG_NOTIFY),)
+        )
 
-while True:
-    send_ble_data()
-    time.sleep(0.5)
-    
-    # TODO : Implémenter le BLE pour utilisation finale
+        # Service custom : IMU (notify), batterie détails (notify), commande (write)
+        custom_service = (
+            self._uuid_custom_svc,
+            (
+                (self._uuid_imu_char, FLAG_NOTIFY),
+                (self._uuid_batt_details_char, FLAG_NOTIFY),
+                (self._uuid_cmd_char, FLAG_WRITE),
+            )
+        )
+
+        services = (batt_service, custom_service)
+        handles = self.ble.gatts_register_services(services)
+
+        ((self._batt_handle,), (self._imu_handle, self._batt_details_handle, self._cmd_handle)) = handles
+
+    def _advertise(self, name):
+        payload = self._advertising_payload(name=name)
+        self.ble.gap_advertise(100_000, payload)
+
+    def _advertising_payload(self, name):
+        return bytearray(
+            b'\x02\x01\x06' +                     # Flags
+            bytes([len(name) + 1, 0x09]) +        # Complete name
+            name.encode('utf-8')
+        )
+
+    def _irq(self, event, data):
+        if event == 1:  # _IRQ_CENTRAL_CONNECT
+            conn_handle, _, _ = data
+            self._connections.add(conn_handle)
+            print("BLE connecté")
+        elif event == 2:  # _IRQ_CENTRAL_DISCONNECT
+            conn_handle, _, _ = data
+            self._connections.discard(conn_handle)
+            self._advertise(self.name)
+            print("BLE déconnecté")
+        elif event == 3:  # _IRQ_GATTS_WRITE
+            conn_handle, attr_handle = data
+            if attr_handle == self._cmd_handle:
+                cmd = self.ble.gatts_read(attr_handle)
+                print("Commande reçue :", cmd)
+                # Tu peux traiter ici (ex: changer un mode, déclencher un reset, etc.)
+
+    def send_imu_data(self, data, origine="haut"):
+        """
+        data = tuple/list of 6 valeurs : ax, ay, az, gx, gy, gz
+        origine = "haut" ou "bas"
+        """
+        if not self._connections:
+            return
+
+        # Ajout d’un champ d’origine (0 = haut, 1 = bas) dans le payload
+        origine_code = 0 if origine == "haut" else 1
+
+        payload = struct.pack("<Bhhhhhh",
+                              origine_code,
+                              int(data[0]), int(data[1]), int(data[2]),
+                              int(data[3]), int(data[4]), int(data[5]))
+
+        for conn in self._connections:
+            self.ble.gatts_notify(conn, self._imu_handle, payload)
+
+    def send_battery_info(self, soc, voltage_mv, temp_c, capacity_mah):
+        if not self._connections:
+            return
+
+        # Envoi pourcentage (standard)
+        if soc != self._soc_last_sent:
+            for conn in self._connections:
+                self.ble.gatts_notify(conn, self._batt_handle, bytes([soc]))
+            self._soc_last_sent = soc
+
+        # Envoi détails (custom)
+        payload = struct.pack("<HhH",
+                              int(voltage_mv),           # mV
+                              int(temp_c * 100),         # centièmes °C
+                              int(capacity_mah))         # mAh
+
+        for conn in self._connections:
+            self.ble.gatts_notify(conn, self._batt_details_handle, payload)
