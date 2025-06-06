@@ -80,3 +80,4 @@ class MPU6050:
         
         if self.actif:
             self.initialisationI2C()
+

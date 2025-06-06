@@ -3,12 +3,12 @@
 
 class Batterie:
     def __init__(self):
-        self.pourcentage = None        # state of charge
-        self.sante = None             # state of health
-        self.tension = None
-        self.temperature = None
-        self.capaciteeActuelle = None
-        self.capaciteeMaximale = None
+        self.pourcentage = 0       # state of charge
+        self.sante = 0             # state of health
+        self.tension = 0
+        self.temperature = 0
+        self.capaciteeActuelle = 0
+        self.capaciteeMaximale = 0
         
         self.changement = False
 
@@ -30,16 +30,11 @@ class Capteurs:
         self.conversion_acc = None
         self.conversion_gyr = None
 
-class BLEStatus:
-    def __init__(self):
-        self.connecte = False
-
 class Payload:
     def __init__(self):
         self.machineEtat = ""  # ex: "non_connecte", "connecte", "actif", "non_actif"
         self.batterie = Batterie()
         self.capteurs = Capteurs()
-        self.BLE = BLEStatus()
 
 
 payload = Payload()

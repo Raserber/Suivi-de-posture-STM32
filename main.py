@@ -9,13 +9,6 @@ from sparkfun import SPARKFUN
 
 from fonctions import *
 
-# Initialisation des LEDs ---
-
-LED1 = pyb.LED(1)
-LED2 = pyb.LED(2)
-LED3 = pyb.LED(3)
-# ---------------------------
-
 # Initialisation de l'I2C ---
 i2c = SoftI2C(scl=Pin('D15'), sda=Pin('D14'), freq=100000)
 
@@ -27,13 +20,13 @@ sparkfun = SPARKFUN(i2c, "D12")
 # -------------------------------------------------------------------
 
 # Initialisation de la communication avec les MPU6050 ---
-capteur_haut = MPU6050(i2c, 0x69, "D13", position="haut")
-capteur_bas = MPU6050(i2c, 0x68, "A5", position="bas")
+capteur_haut = MPU6050(i2c, 0x69, "D13")
+capteur_bas = MPU6050(i2c, 0x68, "A5")
 
 # -------------------------------------------------------
 
 # Initialisation des variables du payload ---
-payload.capteurs.dt = 500
+payload.capteurs.dt = 5
 
 payload.machineEtat = "non_connecte"
 
@@ -44,7 +37,7 @@ payload.batterie.capaciteeMaximale = sparkfun.read_FullChargeCapacity()
 # ----------------------------------------------
 
 # Initialisation du BLE ---
-ble = BLEManager(name="FAME_IUT1Test")
+ble = BLEManager(name="STM32Test")
 
 # -------------------------
 
@@ -55,7 +48,7 @@ while True :
         
         chenillard()
     
-    else if (payload.machineEtat == "connecte") :
+    elif (payload.machineEtat == "connecte") :
         
         LEDs_blink()
         ble.send_battery_info()
@@ -64,24 +57,29 @@ while True :
     
     if (payload.machineEtat == "actif") :
         
+        if (payload.batterie.changement) :
+            ble.send_battery_info()
+            payload.batterie.changement = False
+        
         if (capteur_haut.actif) :
-            ble.send_imu_data(capteur_haut.read())
+            ble.send_imu_data(capteur_haut.read(), "haut")
         
         if (capteur_bas.actif) :
-            ble.send_imu_data(capteur_bas.read())
+            ble.send_imu_data(capteur_bas.read(), "bas")
         
         # sleep entre chaque mesure ---
         time.sleep(payload.capteurs.dt)
         
         # -----------------------------
 
-    else if (payload.machineEtat == "non_actif") :
+    elif (payload.machineEtat == "non_actif") :
         
         LED3.high()
         time.sleep(0.1)
         LED3.low()
         time.sleep(0.5)
         
-    if (payload.batterie.changement) :
-        ble.send_battery_info()
-        payload.batterie.changement = False
+        if (payload.batterie.changement) :
+            ble.send_battery_info()
+            payload.batterie.changement = False
+

@@ -1,7 +1,11 @@
 from bluetooth import BLE, UUID, FLAG_READ, FLAG_NOTIFY, FLAG_WRITE
 import struct
+import pyb
+import time
 
 from variablesGlobales import payload
+
+LED1 = pyb.LED(1)
 
 class BLEManager:
     def __init__(self, name="SensorNode"):
@@ -68,29 +72,43 @@ class BLEManager:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             print("BLE connecté")
+            
+            payload.machineEtat = "connecte"
+            
         elif event == 2:  # _IRQ_CENTRAL_DISCONNECT
             conn_handle, _, _ = data
             self._connections.discard(conn_handle)
             self._advertise(self.name)
             print("BLE déconnecté")
+            
+            payload.machineEtat = "non_connecte"
+            
         elif event == 3:  # _IRQ_GATTS_WRITE
             conn_handle, attr_handle = data
             if attr_handle == self._cmd_handle:
                 cmd = self.ble.gatts_read(attr_handle)
                 print("Commande reçue :", cmd)
-                # Tu peux traiter ici (ex: changer un mode, déclencher un reset, etc.)
+                
+                if (cmd == 0) :
+                    
+                    payload.machineEtat = "non_connecte"
 
     def send_imu_data(self, data, origine="haut"):
         """
         data = tuple/list of 6 valeurs : ax, ay, az, gx, gy, gz
         origine = "haut" ou "bas"
         """
+    
         if not self._connections:
             return
-
+        
+        LED1.on()
         # Ajout d’un champ d’origine (0 = haut, 1 = bas) dans le payload
-        origine_code = 0 if origine == "haut" else 1
-
+        if (origine == "haut") :
+            origine_code = 1
+        elif (origine == "bas") :
+            origine_code = 0
+            
         payload = struct.pack("<Bhhhhhh",
                               origine_code,
                               int(data[0]), int(data[1]), int(data[2]),
@@ -99,6 +117,9 @@ class BLEManager:
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._imu_handle, payload)
 
+        
+        LED1.off()
+        
     def send_battery_info(self, pourcentageBatterie=payload.batterie.pourcentage,
                           tensionBatterie=payload.batterie.tension,
                           temperatureBatterie=payload.batterie.temperature,
@@ -106,6 +127,8 @@ class BLEManager:
         if not self._connections:
             return
 
+        LED1.on()
+        
         # Envoi pourcentage (standard)
         if pourcentageBatterie != self._pourcentageBatterie_last_sent:
             for conn in self._connections:
@@ -120,3 +143,5 @@ class BLEManager:
 
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._batt_details_handle, payload)
+
+        LED1.off()

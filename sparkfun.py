@@ -82,3 +82,4 @@ class SPARKFUN:
     # TODO : réflechir à aller chercher informations supplementaires quand batterie basse (tension, capacité restante ...)
     # TODO : aller chercher capacité réelle que lors du démarrage et autres informations non changeantes rapidement
     
+
