@@ -1,6 +1,8 @@
 from bluetooth import BLE, UUID, FLAG_READ, FLAG_NOTIFY, FLAG_WRITE
 import struct
 
+from variablesGlobales import payload
+
 class BLEManager:
     def __init__(self, name="SensorNode"):
         self.ble = BLE()
@@ -9,7 +11,7 @@ class BLEManager:
 
         self.name = name
         self._connections = set()
-        self._soc_last_sent = None
+        self._pourcentageBatterie_last_sent = None
 
         # UUIDs mis à jour
         self._uuid_batt_svc = UUID(0x180F)
@@ -97,21 +99,24 @@ class BLEManager:
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._imu_handle, payload)
 
-    def send_battery_info(self, soc, voltage_mv, temp_c, capacity_mah):
+    def send_battery_info(self, pourcentageBatterie=payload.batterie.pourcentage,
+                          tensionBatterie=payload.batterie.tension,
+                          temperatureBatterie=payload.batterie.temperature,
+                          capaciteeMaximale=payload.batterie.capaciteeMaximale):
         if not self._connections:
             return
 
         # Envoi pourcentage (standard)
-        if soc != self._soc_last_sent:
+        if pourcentageBatterie != self._pourcentageBatterie_last_sent:
             for conn in self._connections:
-                self.ble.gatts_notify(conn, self._batt_handle, bytes([soc]))
-            self._soc_last_sent = soc
+                self.ble.gatts_notify(conn, self._batt_handle, bytes([pourcentageBatterie]))
+            self._pourcentageBatterie_last_sent = pourcentageBatterie
 
         # Envoi détails (custom)
         payload = struct.pack("<HhH",
-                              int(voltage_mv),           # mV
-                              int(temp_c * 100),         # centièmes °C
-                              int(capacity_mah))         # mAh
+                              int(tensionBatterie),           # mV
+                              int(temperatureBatterie * 100),         # centièmes °C
+                              int(capaciteeMaximale))         # mAh
 
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._batt_details_handle, payload)

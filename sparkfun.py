@@ -69,8 +69,12 @@ class SPARKFUN:
     def irq(self, pin):
         """Callback appelée sur front descendant de GPOUT."""
         
-        soc = self.read_soc()
-        print("Interruption GPOUT – nouveau SOC :", soc)
+        payload.batterie.pourcentage = sparkfun.read_soc()
+        payload.batterie.tension = sparkfun.read_voltage()
+        payload.batterie.temperature = sparkfun.read_temperature()
+        payload.batterie.capaciteeMaximale = sparkfun.read_FullChargeCapacity()
+        
+        payload.batterie.changement = True
 
     
     # TODO : instrumenter StateOfHealth pour pourcentage réel de charge

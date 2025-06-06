@@ -9,6 +9,8 @@ class Batterie:
         self.temperature = None
         self.capaciteeActuelle = None
         self.capaciteeMaximale = None
+        
+        self.changement = False
 
 class Capteur:
     def __init__(self):
