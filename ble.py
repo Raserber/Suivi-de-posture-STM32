@@ -136,10 +136,14 @@ class BLEManager:
             self._pourcentageBatterie_last_sent = pourcentageBatterie
 
         # Envoi détails (custom)
-        payload = struct.pack("<HhH",
-                              int(tensionBatterie),           # mV
-                              int(temperatureBatterie * 100),         # centièmes °C
-                              int(capaciteeMaximale))         # mAh
+        payload = struct.pack("<HhHHHH",
+                              int(tensionBatterie),                 # mV
+                              int(temperatureBatterie * 100),       # centièmes °C
+                              int(capaciteeMaximale),               # mAh
+                              int(payload.capteurs.dt*1000),        # ms
+                              int(payload.capteurs.conversion_acc),
+                              int(payload.capteurs.conversion_gyr))
+                            
 
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._batt_details_handle, payload)
