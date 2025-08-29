@@ -1,42 +1,34 @@
 
 # Variables globales à partagees entre tous les fichiers pour simplifier leur utilisation
+# Pour qu'elles se partagent dynamiquement entre les fichiers il faut que les variables soient des dictionnaires
 
-class Batterie:
-    def __init__(self):
-        self.pourcentage = 0       # state of charge
-        self.sante = 0             # state of health
-        self.tension = 0
-        self.temperature = 0
-        self.capaciteeActuelle = 0
-        self.capaciteeMaximale = 0
-        
-        self.changement = False
 
 class Capteur:
     def __init__(self):
         self.connecte = False
-        self.ax = None
-        self.ay = None
-        self.az = None
-        self.gx = None
-        self.gy = None
-        self.gz = None
-
-class Capteurs:
-    def __init__(self):
-        self.haut = Capteur()
-        self.bas = Capteur()
-        self.dt = None
-        self.conversion_acc = None
-        self.conversion_gyr = None
+        self.ax = 0
+        self.ay = 0
+        self.az = 0
+        self.gx = 0
+        self.gy = 0
+        self.gz = 0
 
 
-machineEtat = ""  # ex: "non_connecte", "connecte", "actif", "non_actif"
-batterie = Batterie()
+machine = {"etat": "non_connecte"}  # ex: "non_connecte", "connecte", "actif", "non_actif"
+
+batterie = {
+    "pourcentage" : 0 #state of charge
+    "sante" : 0 # state of health
+    "tension" : 0
+    "temperature" : 0
+    "capaciteeActuelle" : 0
+    "capaciteeMaximale" : 0
+    "changement" : False
+    }
 capteurs = {
     "haut" : Capteur(),
     "bas" : Capteur(),
-    "dt" : None,
-    "conversion_acc" : None,
-    "conversion_gyr" : None
+    "dt" : 200,
+    "conversion_acc" : 16384,
+    "conversion_gyr" : 131
     }

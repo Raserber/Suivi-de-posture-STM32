@@ -73,7 +73,7 @@ class BLEManager:
             self._connections.add(conn_handle)
             print("BLE connecté")
             
-            payload.machineEtat = "connecte"
+            payload.machine["etat"] = "connecte"
             
         elif event == 2:  # _IRQ_CENTRAL_DISCONNECT
             conn_handle, _, _ = data
@@ -81,7 +81,7 @@ class BLEManager:
             self._advertise(self.name)
             print("BLE déconnecté")
             
-            payload.machineEtat = "non_connecte"
+            payload.machine["etat"] = "non_connecte"
             
         elif event == 3:  # _IRQ_GATTS_WRITE
             conn_handle, attr_handle = data
@@ -91,7 +91,7 @@ class BLEManager:
                 
                 if (cmd == 0) :
                     
-                    payload.machineEtat = "non_connecte"
+                    payload.machine["etat"] = "non_connecte"
 
     def send_imu_data(self, data, origine="haut"):
         """
@@ -128,16 +128,16 @@ class BLEManager:
         LED1.on()
         
         # Envoi pourcentage (standard)
-        if payload.batterie.pourcentage != self._pourcentageBatterie_last_sent:
+        if payload.batterie["pourcentage"] != self._pourcentageBatterie_last_sent:
             for conn in self._connections:
-                self.ble.gatts_notify(conn, self._batt_handle, bytes([payload.batterie.pourcentage]))
-            self._pourcentageBatterie_last_sent = payload.batterie.pourcentage
+                self.ble.gatts_notify(conn, self._batt_handle, bytes([payload.batterie["pourcentage"]]))
+            self._pourcentageBatterie_last_sent = payload.batterie["pourcentage"]
 
         # Envoi détails (custom)
         payload_BLE = struct.pack("<HhHHHH",
-                              int(payload.batterie.tension),                 # mV
-                              int(payload.batterie.temperature * 100),       # centièmes °C
-                              int(payload.batterie.capaciteeMaximale),               # mAh
+                              int(payload.batterie["tension"]),                 # mV
+                              int(payload.batterie["temperature"] * 100),       # centièmes °C
+                              int(payload.batterie["capaciteeMaximale"]),               # mAh
                               int(payload.capteurs["dt"]*1000),        # ms
                               int(payload.capteurs["conversion_acc"]),
                               int(payload.capteurs["conversion_gyr"]))

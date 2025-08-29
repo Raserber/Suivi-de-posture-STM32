@@ -26,18 +26,20 @@ capteur_bas = MPU6050(i2c, 0x68, "A5", "bas")
 # -------------------------------------------------------
 
 # Initialisation des variables du payload ---
-payload.capteurs["dt"] = 5
+payload.capteurs["dt"] = 0.2
+payload.capteurs["conversion_acc"] = 16384
+payload.capteurs["conversion_gyr"] = 131
 
-payload.machineEtat = "non_connecte"
+payload.machine["etat"] = "non_connecte"
 
-payload.batterie.pourcentage = sparkfun.read_soc()
-payload.batterie.tension = sparkfun.read_voltage()
-payload.batterie.temperature = sparkfun.read_temperature()
-payload.batterie.capaciteeMaximale = sparkfun.read_FullChargeCapacity()
+payload.batterie["pourcentage"] = sparkfun.read_soc()
+payload.batterie["tension"] = sparkfun.read_voltage()
+payload.batterie["temperature"] = sparkfun.read_temperature()
+payload.batterie["capaciteeMaximale"] = sparkfun.read_FullChargeCapacity()
 # ----------------------------------------------
 
 # Initialisation du BLE ---
-ble = BLEManager(name="STM32Test")
+ble = BLEManager(name="TestSTM32")
 
 # -------------------------
 
@@ -46,22 +48,22 @@ while True :
     print(payload.capteurs["bas"].connecte)
     
     # tant que non connecte, retour visuel avec un chenillard
-    if (payload.machineEtat == "non_connecte") :
+    if (payload.machine["etat"] == "non_connecte") :
         
         chenillard()
     
-    elif (payload.machineEtat == "connecte") :
+    elif (payload.machine["etat"] == "connecte") :
         
         LEDs_blink()
         ble.send_battery_info()
         
-        payload.machineEtat = "actif"
+        payload.machine["etat"] = "actif"
     
-    if (payload.machineEtat == "actif") :
+    if (payload.machine["etat"] == "actif") :
         
-        if (payload.batterie.changement) :
+        if (payload.batterie["changement"]) :
             ble.send_battery_info()
-            payload.batterie.changement = False
+            payload.batterie["changement"] = False
         
         if (capteur_haut.actif) :
             ble.send_imu_data(capteur_haut.read(), "haut")
@@ -74,15 +76,15 @@ while True :
         
         # -----------------------------
 
-    elif (payload.machineEtat == "non_actif") :
+    elif (payload.machine["etat"] == "non_actif") :
         
         LED3.high()
         time.sleep(0.1)
         LED3.low()
         time.sleep(0.5)
         
-        if (payload.batterie.changement) :
+        if (payload.batterie["changement"]) :
             ble.send_battery_info()
-            payload.batterie.changement = False
+            payload.batterie["changement"] = False
 
 
