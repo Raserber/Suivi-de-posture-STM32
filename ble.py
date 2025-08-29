@@ -3,7 +3,7 @@ import struct
 import pyb
 import time
 
-from variablesGlobales import payload
+import vars_g as payload
 
 LED1 = pyb.LED(1)
 
@@ -57,8 +57,8 @@ class BLEManager:
         ((self._batt_handle,), (self._imu_handle, self._batt_details_handle, self._cmd_handle)) = handles
 
     def _advertise(self, name):
-        payload = self._advertising_payload(name=name)
-        self.ble.gap_advertise(100_000, payload)
+        payload_BLE = self._advertising_payload(name=name)
+        self.ble.gap_advertise(100_000, payload_BLE)
 
     def _advertising_payload(self, name):
         return bytearray(
@@ -120,32 +120,30 @@ class BLEManager:
         
         LED1.off()
         
-    def send_battery_info(self, pourcentageBatterie=payload.batterie.pourcentage,
-                          tensionBatterie=payload.batterie.tension,
-                          temperatureBatterie=payload.batterie.temperature,
-                          capaciteeMaximale=payload.batterie.capaciteeMaximale):
+    def send_battery_info(self) :
+        
         if not self._connections:
             return
 
         LED1.on()
         
         # Envoi pourcentage (standard)
-        if pourcentageBatterie != self._pourcentageBatterie_last_sent:
+        if payload.batterie.pourcentage != self._pourcentageBatterie_last_sent:
             for conn in self._connections:
-                self.ble.gatts_notify(conn, self._batt_handle, bytes([pourcentageBatterie]))
-            self._pourcentageBatterie_last_sent = pourcentageBatterie
+                self.ble.gatts_notify(conn, self._batt_handle, bytes([payload.batterie.pourcentage]))
+            self._pourcentageBatterie_last_sent = payload.batterie.pourcentage
 
         # Envoi détails (custom)
-        payload = struct.pack("<HhHHHH",
-                              int(tensionBatterie),                 # mV
-                              int(temperatureBatterie * 100),       # centièmes °C
-                              int(capaciteeMaximale),               # mAh
-                              int(payload.capteurs.dt*1000),        # ms
-                              int(payload.capteurs.conversion_acc),
-                              int(payload.capteurs.conversion_gyr))
+        payload_BLE = struct.pack("<HhHHHH",
+                              int(payload.batterie.tension),                 # mV
+                              int(payload.batterie.temperature * 100),       # centièmes °C
+                              int(payload.batterie.capaciteeMaximale),               # mAh
+                              int(payload.capteurs["dt"]*1000),        # ms
+                              int(payload.capteurs["conversion_acc"]),
+                              int(payload.capteurs["conversion_gyr"]))
                             
 
         for conn in self._connections:
-            self.ble.gatts_notify(conn, self._batt_details_handle, payload)
+            self.ble.gatts_notify(conn, self._batt_details_handle, payload_BLE)
 
         LED1.off()

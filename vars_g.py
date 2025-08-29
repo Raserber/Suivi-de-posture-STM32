@@ -14,7 +14,7 @@ class Batterie:
 
 class Capteur:
     def __init__(self):
-        self.connecte = None
+        self.connecte = False
         self.ax = None
         self.ay = None
         self.az = None
@@ -30,11 +30,13 @@ class Capteurs:
         self.conversion_acc = None
         self.conversion_gyr = None
 
-class Payload:
-    def __init__(self):
-        self.machineEtat = ""  # ex: "non_connecte", "connecte", "actif", "non_actif"
-        self.batterie = Batterie()
-        self.capteurs = Capteurs()
 
-
-payload = Payload()
+machineEtat = ""  # ex: "non_connecte", "connecte", "actif", "non_actif"
+batterie = Batterie()
+capteurs = {
+    "haut" : Capteur(),
+    "bas" : Capteur(),
+    "dt" : None,
+    "conversion_acc" : None,
+    "conversion_gyr" : None
+    }

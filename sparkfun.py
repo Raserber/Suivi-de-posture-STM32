@@ -1,6 +1,8 @@
 from machine import Pin, I2C
 import time
 
+import vars_g as payload 
+
 class SPARKFUN:
     
     adresse_lecture = 0x55  # 7-bit address
@@ -69,10 +71,10 @@ class SPARKFUN:
     def irq(self, pin):
         """Callback appelée sur front descendant de GPOUT."""
         
-        payload.batterie.pourcentage = sparkfun.read_soc()
-        payload.batterie.tension = sparkfun.read_voltage()
-        payload.batterie.temperature = sparkfun.read_temperature()
-        payload.batterie.capaciteeMaximale = sparkfun.read_FullChargeCapacity()
+        payload.batterie.pourcentage = self.read_soc()
+        payload.batterie.tension = self.read_voltage()
+        payload.batterie.temperature = self.read_temperature()
+        payload.batterie.capaciteeMaximale = self.read_FullChargeCapacity()
         
         payload.batterie.changement = True
 

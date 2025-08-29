@@ -1,7 +1,7 @@
 from machine import SoftI2C, Pin
 import time
 
-from variablesGlobales import payload
+import vars_g as payload
 
 from ble import BLEManager
 from mpu6050 import MPU6050
@@ -20,13 +20,13 @@ sparkfun = SPARKFUN(i2c, "D12")
 # -------------------------------------------------------------------
 
 # Initialisation de la communication avec les MPU6050 ---
-capteur_haut = MPU6050(i2c, 0x69, "D13")
-capteur_bas = MPU6050(i2c, 0x68, "A5")
+capteur_haut = MPU6050(i2c, 0x69, "D13", "haut")
+capteur_bas = MPU6050(i2c, 0x68, "A5", "bas")
 
 # -------------------------------------------------------
 
 # Initialisation des variables du payload ---
-payload.capteurs.dt = 5
+payload.capteurs["dt"] = 5
 
 payload.machineEtat = "non_connecte"
 
@@ -42,6 +42,8 @@ ble = BLEManager(name="STM32Test")
 # -------------------------
 
 while True :
+    
+    print(payload.capteurs["bas"].connecte)
     
     # tant que non connecte, retour visuel avec un chenillard
     if (payload.machineEtat == "non_connecte") :
@@ -68,7 +70,7 @@ while True :
             ble.send_imu_data(capteur_bas.read(), "bas")
         
         # sleep entre chaque mesure ---
-        time.sleep(payload.capteurs.dt)
+        time.sleep(payload.capteurs["dt"])
         
         # -----------------------------
 
@@ -82,4 +84,5 @@ while True :
         if (payload.batterie.changement) :
             ble.send_battery_info()
             payload.batterie.changement = False
+
 

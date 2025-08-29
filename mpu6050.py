@@ -1,5 +1,7 @@
 from machine import Pin
 
+import vars_g as payload 
+
 class MPU6050:
     PWR_MGMT_1 = 0x6B
     SMPLRT_DIV = 0x19
@@ -14,10 +16,11 @@ class MPU6050:
     GYRO_CONFIG_500 = 0x08  # +/- 500dps
     ACCEL_CONFIG_4G = 0x08  # +/- 4G
 
-    def __init__(self, i2cHandler, MPU6050_ADDR, pin_temoin_connexion):
+    def __init__(self, i2cHandler, MPU6050_ADDR, pin_temoin_connexion, position):
         
         self.i2c = i2cHandler
         self.adresse = MPU6050_ADDR
+        self.position = position
         
         self.temoin_connexion = Pin(pin_temoin_connexion, Pin.IN, Pin.PULL_NONE)
         self.temoin_connexion.irq(trigger=self.temoin_connexion.IRQ_FALLING | self.temoin_connexion.IRQ_RISING, handler=self.irq)
@@ -75,6 +78,7 @@ class MPU6050:
             return 0;
         
         self.actif = self.temoin_connexion.value()
+        payload.capteurs[self.position].connecte = self.actif
         
         print("Capteur", self.adresse, ":", "Actif" if self.actif else "Inactif")
         
