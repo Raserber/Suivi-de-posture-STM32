@@ -109,10 +109,10 @@ class BLEManager:
         elif (origine == "bas") :
             origine_code = 0
             
-        payload = struct.pack("<Bhhhhhh",
-                              origine_code,
+        payload = struct.pack("<hhhhhhB",
                               int(data[0]), int(data[1]), int(data[2]),
-                              int(data[3]), int(data[4]), int(data[5]))
+                              int(data[3]), int(data[4]), int(data[5]),
+                              origine_code)
 
         for conn in self._connections:
             self.ble.gatts_notify(conn, self._imu_handle, payload)
@@ -134,13 +134,16 @@ class BLEManager:
             self._pourcentageBatterie_last_sent = payload.batterie["pourcentage"]
 
         # Envoi détails (custom)
-        payload_BLE = struct.pack("<HhHHHH",
+        payload_BLE = struct.pack("<HhHHHHB",
                               int(payload.batterie["tension"]),                 # mV
                               int(payload.batterie["temperature"] * 100),       # centièmes °C
                               int(payload.batterie["capaciteeMaximale"]),               # mAh
                               int(payload.capteurs["dt"]*1000),        # ms
                               int(payload.capteurs["conversion_acc"]),
-                              int(payload.capteurs["conversion_gyr"]))
+                              int(payload.capteurs["conversion_gyr"]),
+                              int(payload.batterie["pourcentage"]))
+        
+        
                             
 
         for conn in self._connections:

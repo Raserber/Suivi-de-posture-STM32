@@ -17,12 +17,12 @@ class Capteur:
 machine = {"etat": "non_connecte"}  # ex: "non_connecte", "connecte", "actif", "non_actif"
 
 batterie = {
-    "pourcentage" : 0 #state of charge
-    "sante" : 0 # state of health
-    "tension" : 0
-    "temperature" : 0
-    "capaciteeActuelle" : 0
-    "capaciteeMaximale" : 0
+    "pourcentage" : 0, #state of charge
+    "sante" : 0, # state of health
+    "tension" : 0,
+    "temperature" : 0,
+    "capaciteeActuelle" : 0,
+    "capaciteeMaximale" : 0,
     "changement" : False
     }
 capteurs = {
