@@ -69,6 +69,10 @@ class MPU6050:
     def read(self):
         self.get_accelerometre()
         self.get_gyroscope()
+
+        # controle de la valeur empechant l'envoi de 0, 0, 0, 0, 0, 0
+        if (self.ax+self.ay+self.az+self.gx+self.gy+self.gz == 0 and self.ax == 0 :
+            self.ax, self.ay, self.az, self.gx, self.gy, self.gz = 1, 1, 1, 1, 1, 1
         
         return self.ax, self.ay, self.az, self.gx, self.gy, self.gz
 
